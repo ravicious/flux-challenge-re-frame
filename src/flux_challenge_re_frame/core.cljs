@@ -13,7 +13,7 @@
 (defn hello-world []
   [:h1 (:text @app-state)])
 
-(reagent/render-component [hello-world]
+#_(reagent/render-component [hello-world]
                           (. js/document (getElementById "app")))
 
 (defn on-js-reload []
