@@ -4,17 +4,45 @@
 
 (enable-console-print!)
 
-(println "Edits to this text should show up in your developer console.")
-
 ;; define your app data so that it doesn't get over-written on reload
 
-(defonce app-state (atom {:text "Hello world!"}))
+(defonce app-state (atom {:planet "Tatooine"
+                          :jedis [{:name "Jorak Uln"
+                                   :homeworld "Korriban"}
+                                  {:name "Exar Kun"
+                                   :homeworld "Coruscant"}
+                                  {:name "Skere Kaan"
+                                   :homeworld "Coruscant"}
+                                  {:name "Na'daz"
+                                   :homeworld "Ryloth"}
+                                  {:name "Darth Bane"
+                                   :homeworld "Apatros"}]}))
 
-(defn hello-world []
-  [:h1 (:text @app-state)])
+(defn planet-monitor [planet]
+  [:h1 {:class "css-planet-monitor"}
+   (str "Obi-Wan currently on " planet)])
 
-#_(reagent/render-component [hello-world]
-                          (. js/document (getElementById "app")))
+(defn jedi-slot [jedi]
+  [:li {:class "css-slot"}
+   [:h3 (:name jedi)]
+   [:h6 (str "Homeworld: " (:homeworld jedi))]])
+
+(defn dark-jedi-list []
+  [:div {:class "css-root"}
+   [planet-monitor (:planet @app-state)]
+
+   [:section {:class "css-scrollable-list"}
+    [:ul {:class "css-slots"}
+     (for [jedi (:jedis @app-state)]
+       ^{:key (:name jedi)} [jedi-slot jedi])]
+
+    [:div {:class "css-scroll-buttons"}
+     [:button {:class "css-button-up"}]
+     [:button {:class "css-button-down"}]]]])
+
+(reagent/render-component
+  [dark-jedi-list]
+  (. js/document (getElementById "app")))
 
 (defn on-js-reload []
   ;; optionally touch your app-state to force rerendering depending on
