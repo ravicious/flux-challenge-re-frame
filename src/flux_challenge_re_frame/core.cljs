@@ -1,12 +1,13 @@
 (ns ^:figwheel-always flux-challenge-re-frame.core
   (:require
     [clojure.walk :refer [keywordize-keys]]
-    [reagent.core :as reagent :refer [atom]]
+    [reagent.core :as reagent]
     [chord.client :refer [ws-ch]]
     [cljs.core.async :refer [<!]]
     [cljs-http.client :as http])
   (:require-macros
-    [cljs.core.async.macros :refer [go]]))
+    [cljs.core.async.macros :refer [go]]
+    [reagent.ratom :refer [reaction]]))
 
 (enable-console-print!)
 
@@ -21,9 +22,12 @@
 
 (def jedi-url "http://localhost:3000/dark-jedis/")
 
-(defonce app-state (atom {:planet {:id nil :name "unknown"}
-                          :jedis []
-                          :first-jedi-id 3616}))
+(defonce app-state (reagent/atom {:planet {:id nil :name "unknown"}
+                                  :jedis []
+                                  :first-jedi-id 3616}))
+
+(def current-planet (reaction (:planet @app-state)))
+(def jedis (reaction (:jedis @app-state)))
 
 (defn pad
   "Pads the collection coll to the given length n with val"
@@ -77,7 +81,7 @@
 
 (defn planet-monitor [planet]
   [:h1 {:class "css-planet-monitor"}
-   (str "Obi-Wan currently on " (:name planet))])
+   (str "Obi-Wan currently on " (:name @planet))])
 
 (defn jedi-slot [jedi]
   [:li {:class "css-slot"}
@@ -86,14 +90,14 @@
       [:h3 (:name jedi)]
       [:h6 (str "Homeworld: " (get-in jedi [:homeworld :name]))]])])
 
-(defn dark-jedi-list []
-  (let [jedis (pad 5 nil (:jedis @app-state))]
+(defn dark-jedi-list [current-planet jedis]
+  (let [padded-jedis (pad 5 nil @jedis)]
     [:div {:class "css-root"}
-     [planet-monitor (:planet @app-state)]
+     [planet-monitor current-planet]
 
      [:section {:class "css-scrollable-list"}
       [:ul {:class "css-slots"}
-       (for [jedi jedis]
+       (for [jedi padded-jedis]
          (let [key (or
                      (:name jedi)
                      (gensym "jedi"))] ; use random name if no name present
@@ -104,7 +108,7 @@
        [:button {:class "css-button-down"}]]]]))
 
 (reagent/render-component
-  [dark-jedi-list]
+  [dark-jedi-list current-planet jedis]
   (. js/document (getElementById "app")))
 
 (defn on-js-reload []
