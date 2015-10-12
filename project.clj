@@ -9,7 +9,8 @@
                  [reagent "0.5.1"]
                  [re-frame "0.4.1"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [jarohen/chord "0.6.0"]]
+                 [jarohen/chord "0.6.0"]
+                 [cljs-http "0.1.37"]]
 
   :plugins [[lein-cljsbuild "1.1.0"]
             [lein-figwheel "0.4.1"]]
