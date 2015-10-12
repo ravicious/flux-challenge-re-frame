@@ -4,7 +4,8 @@
     [reagent.core :as reagent]
     [chord.client :refer [ws-ch]]
     [cljs.core.async :refer [<!]]
-    [cljs-http.client :as http])
+    [cljs-http.client :as http]
+    [re-frame.core :as re-frame :refer [subscribe register-sub]])
   (:require-macros
     [cljs.core.async.macros :refer [go]]
     [reagent.ratom :refer [reaction]]))
@@ -25,9 +26,6 @@
 (defonce app-state (reagent/atom {:planet {:id nil :name "unknown"}
                                   :jedis []
                                   :first-jedi-id 3616}))
-
-(def current-planet (reaction (:planet @app-state)))
-(def jedis (reaction (:jedis @app-state)))
 
 (defn pad
   "Pads the collection coll to the given length n with val"
@@ -79,9 +77,31 @@
         (save-jedi jedi)
         (recur (get-in jedi [:apprentice :id]))))))
 
+
+;;; subs
+
+(defn jedis [db, _]
+  (reaction (:jedis @db)))
+
+(register-sub :jedis jedis)
+
+(defn padded-jedis [db, [_, count]]
+  (->> @(jedis db _)
+       (pad count nil)
+       reaction))
+
+(register-sub :padded-jedis padded-jedis)
+
+(defn current-planet [db, _]
+  (reaction (:planet @db)))
+
+(register-sub :current-planet current-planet)
+
+;;; components
+
 (defn planet-monitor [planet]
   [:h1 {:class "css-planet-monitor"}
-   (str "Obi-Wan currently on " (:name @planet))])
+   (str "Obi-Wan currently on " (:name planet))])
 
 (defn jedi-slot [jedi]
   [:li {:class "css-slot"}
@@ -90,25 +110,27 @@
       [:h3 (:name jedi)]
       [:h6 (str "Homeworld: " (get-in jedi [:homeworld :name]))]])])
 
-(defn dark-jedi-list [current-planet jedis]
-  (let [padded-jedis (pad 5 nil @jedis)]
-    [:div {:class "css-root"}
-     [planet-monitor current-planet]
+(defn dark-jedi-list []
+  (let [current-planet (subscribe [:current-planet])
+        padded-jedis (subscribe [:padded-jedis 5])]
+    (fn []
+      [:div {:class "css-root"}
+       [planet-monitor @current-planet]
 
-     [:section {:class "css-scrollable-list"}
-      [:ul {:class "css-slots"}
-       (for [jedi padded-jedis]
-         (let [key (or
-                     (:name jedi)
-                     (gensym "jedi"))] ; use random name if no name present
-         ^{:key key} [jedi-slot jedi]))]
+       [:section {:class "css-scrollable-list"}
+        [:ul {:class "css-slots"}
+         (for [jedi @padded-jedis]
+           (let [key (or
+                       (:name jedi)
+                       (gensym "jedi"))] ; use random name if no name present
+             ^{:key key} [jedi-slot jedi]))]
 
-      [:div {:class "css-scroll-buttons"}
-       [:button {:class "css-button-up"}]
-       [:button {:class "css-button-down"}]]]]))
+        [:div {:class "css-scroll-buttons"}
+         [:button {:class "css-button-up"}]
+         [:button {:class "css-button-down"}]]]])))
 
 (reagent/render-component
-  [dark-jedi-list current-planet jedis]
+  [dark-jedi-list]
   (. js/document (getElementById "app")))
 
 (defn on-js-reload []
