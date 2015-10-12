@@ -56,8 +56,7 @@
         (if (:success response)
           (:body response)
           ; console.log for that sweet object logging
-          (.log js/console (str "Problems fetching Jedi " jedi-id ". Response:") (clj->js response))
-          )))))
+          (.log js/console (str "Problems fetching Jedi " jedi-id ". Response:") (clj->js response)))))))
 
 (defn save-jedi [jedi]
   (swap! app-state assoc :jedis (conj (:jedis @app-state) jedi)))
