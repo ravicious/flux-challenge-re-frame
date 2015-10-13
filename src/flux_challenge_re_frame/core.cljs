@@ -36,13 +36,18 @@
   (go
     (let [{:keys [ws-channel error]} (<! (ws-ch "ws://localhost:4000" {:format :json}))]
       (if-not error
-        (while true
+        (loop []
+          ; If the websocket server gets closed, the ws-channel gets closed too and the response will be nil.
           (let [response (<! ws-channel)
                 error (:error response)
                 planet (keywordize-keys (:message response))]
-            (if-not error
-              (swap! app-state assoc :planet planet)
-              (println (str "Error while receiving message: " error)))))
+            (if planet
+              (do
+                (swap! app-state assoc :planet planet)
+                (recur))
+              (if error
+                (println (str "Error while receiving message: " error))
+                (println "Websocket connection closed unexpectedly")))))
         (println (str "Error while connecting: " error))))))
 
 (defn get-jedi
