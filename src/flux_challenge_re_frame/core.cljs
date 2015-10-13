@@ -1,11 +1,11 @@
 (ns ^:figwheel-always flux-challenge-re-frame.core
   (:require
     [flux-challenge-re-frame.handlers]
+    [flux-challenge-re-frame.subscriptions]
     [reagent.core :as reagent]
-    [re-frame.core :as re-frame :refer [subscribe register-sub
-                                        dispatch register-handler]])
-  (:require-macros
-    [reagent.ratom :refer [reaction]]))
+    [re-frame.core :as re-frame :refer [subscribe dispatch register-handler]]
+    )
+  )
 
 (enable-console-print!)
 
@@ -23,11 +23,6 @@
                         :first-jedi-id 3616
                         :db-initialized? true})
 
-(defn pad
-  "Pads the collection coll to the given length n with val"
-  [n val coll]
-  (take n (concat coll (repeat val))))
-
 ; At the start of the application, the re-frame's db is empty. We need to populate it by dispatching
 ; the initialize-db event, effectively putting contents of the initial-state map into re-frame's db.
 (register-handler
@@ -36,26 +31,6 @@
     (if (:db-initialized? db)
       db
       initial-state)))
-
-;;; subs
-
-(defn jedis [db, _]
-  (reaction (:jedis @db)))
-
-(register-sub :jedis jedis)
-
-(defn padded-jedis [db, [_, count]]
-  (->> @(jedis db _)
-       (pad count nil)
-       reaction))
-
-(register-sub :padded-jedis padded-jedis)
-
-(defn current-planet [db, _]
-  (reaction (:planet @db)))
-
-(register-sub :current-planet current-planet)
-
 
 ;;; initial dispatches
 
